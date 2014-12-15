@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,6 +14,12 @@ import (
 	"github.com/rackspace/gophercloud/rackspace"
 	"github.com/rackspace/gophercloud/rackspace/compute/v2/flavors"
 	"github.com/rackspace/gophercloud/rackspace/compute/v2/images"
+	"github.com/rackspace/gophercloud/rackspace/compute/v2/servers"
+)
+
+const (
+	defaultImage  = "a3da5530-71c6-4405-b64f-fd2da99d303c" // Ubuntu 12.04 LTS (Precise Pangolin) (PVHVM)
+	defaultFlavor = "general1-1"                           // 1 GB General Purpose v1
 )
 
 func checkErr(msg string, err error) {
@@ -116,8 +123,44 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, content)
 }
 
+func randomStr(prefix string, n int) string {
+	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	var bytes = make([]byte, n)
+	rand.Read(bytes)
+	for i, b := range bytes {
+		bytes[i] = alphanum[b%byte(len(alphanum))]
+	}
+	return prefix + string(bytes)
+}
+
 func handleServerCreate(w http.ResponseWriter, r *http.Request) {
 	defer catchPanic(w)
+
+	client := setupClients()["compute"]
+	content := ""
+
+	name := randomStr("sandbox", 10)
+
+	opts := &servers.CreateOpts{
+		Name:       name,
+		ImageRef:   defaultImage,
+		FlavorRef:  defaultFlavor,
+		DiskConfig: "MANUAL",
+	}
+
+	server, err := servers.Create(client, opts).Extract()
+	checkErr("creating server", err)
+
+	err = servers.WaitForStatus(client, server.ID, "ACTIVE", 60)
+	checkErr("waiting for server to boot", err)
+
+	content += fmt.Sprintf("Server created!\n\n")
+
+	content += fmt.Sprintf("| %-20s | %-36s | %-15s |\n", "Name", "ID", "Password")
+	content += fmt.Sprintf("|%s|%s|%s|\n", hyphens(20), hyphens(36), hyphens(15))
+	content += fmt.Sprintf("| %-20s | %-36s | %-15s | \n", name, server.ID, server.AdminPass)
+
+	fmt.Fprintf(w, content)
 }
 
 func handleServerQuery(w http.ResponseWriter, r *http.Request) {
