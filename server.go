@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -8,11 +9,9 @@ import (
 	"github.com/rackspace/gophercloud/rackspace/compute/v2/servers"
 )
 
-func createServer(client *gophercloud.ServiceClient, content *string, count int) string {
-	name := randomStr("sandbox_", 10)
-
+func createServer(client *gophercloud.ServiceClient, content *string, name, prefix string) string {
 	opts := &servers.CreateOpts{
-		Name:       name,
+		Name:       prefix + name,
 		ImageRef:   defaultImage,
 		FlavorRef:  defaultFlavor,
 		DiskConfig: "MANUAL",
@@ -24,14 +23,36 @@ func createServer(client *gophercloud.ServiceClient, content *string, count int)
 	err = servers.WaitForStatus(client, server.ID, "ACTIVE", 60)
 	checkErr("waiting for server to boot", err)
 
-	if count == 1 {
-		*content += fmt.Sprintf("| %-20s | %-36s | %-15s |\n", "Name", "ID", "Password")
-		*content += fmt.Sprintf("|%s|%s|%s|\n", hyphens(20), hyphens(36), hyphens(15))
-	}
-
+	*content += fmt.Sprintf("| %-20s | %-36s | %-15s |\n", "Name", "ID", "Password")
+	*content += fmt.Sprintf("|%s|%s|%s|\n", hyphens(20), hyphens(36), hyphens(15))
 	*content += fmt.Sprintf("| %-20s | %-36s | %-15s | \n", name, server.ID, server.AdminPass)
 
 	return server.ID
+}
+
+func getPrefix(r *http.Request) string {
+	prefix := r.Header.Get("User-Prefix")
+	if prefix == "" {
+		prefix = randomStr("sandbox_", 10)
+	}
+	return prefix + "_"
+}
+
+func getName(r *http.Request) string {
+	decoder := json.NewDecoder(r.Body)
+
+	body := struct {
+		Name string `json:"name"`
+	}{}
+
+	err := decoder.Decode(&body)
+	checkErr("decoding create_server request JSON", err)
+
+	if body.Name == "" {
+		return randomStr("sandbox_", 10)
+	}
+
+	return body.Name
 }
 
 func handleServerCreate(w http.ResponseWriter, r *http.Request) {
@@ -46,11 +67,8 @@ func handleServerCreate(w http.ResponseWriter, r *http.Request) {
 	client := setupClients()["compute"]
 	content := ""
 
-	for i := 1; i <= 2; i++ {
-		id := createServer(client, &content, i)
-		w.Header().Set("New-Servers", id)
-	}
+	ip := createServer(client, &content, getName(r), getPrefix(r))
+	w.Header().Set("Server-IP", ip)
 
 	fmt.Fprintf(w, content)
-	w.Header().Set("Blah", "*")
 }
