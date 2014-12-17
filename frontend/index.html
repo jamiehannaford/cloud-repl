@@ -2,11 +2,34 @@
 <html>
   <head>
     <script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
-    <script src="js/jquery.steps.js"></script>
     <script src="js/stuff.js"></script>
     <link type="text/css" rel="stylesheet" media="all" href="styles.css" />
   </head>
   <body>
-    <div class="container"></div>
+    <div id="info" class="alert alert-info"></div>
+    <div id="warning" class="alert alert-warning"></div>
+
+    <div class="container clearfix">
+
+      <div class="steps clearfix">
+        <ul>
+          <li class="step1"><span class="number">1.</span>List flavors</li>
+          <li class="disabled step2"><span class="number">2.</span>List images</li>
+          <li class="disabled step3 step4"><span class="number">3.</span>Create servers</li>
+          <li class="disabled step5"><span class="number">4.</span>Create load balancer</li>
+        </ul>
+      </div>
+
+      <div class="content clearfix">
+        <div id="console" class="console-box">
+          <div class="command-box">
+            <span class="thing">$</span>
+            <input class="user-input" autocomplete="false">
+            <div class="log-output"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </body>
 </html>
