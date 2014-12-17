@@ -9,9 +9,9 @@ import (
 	"github.com/rackspace/gophercloud/rackspace/compute/v2/servers"
 )
 
-func createServer(client *gophercloud.ServiceClient, content *string, name, prefix string) string {
+func createServer(client *gophercloud.ServiceClient, content *string, name string) string {
 	opts := &servers.CreateOpts{
-		Name:       prefix + name,
+		Name:       randomStr("sandbox_", 10) + name,
 		ImageRef:   defaultImage,
 		FlavorRef:  defaultFlavor,
 		DiskConfig: "MANUAL",
@@ -20,22 +20,27 @@ func createServer(client *gophercloud.ServiceClient, content *string, name, pref
 	server, err := servers.Create(client, opts).Extract()
 	checkErr("creating server", err)
 
-	err = servers.WaitForStatus(client, server.ID, "ACTIVE", 60)
+	ip := ""
+
+	err = gophercloud.WaitFor(60, func() (bool, error) {
+		current, err := servers.Get(client, server.ID).Extract()
+		ip = current.AccessIPv4
+		if err != nil {
+			return false, err
+		}
+		if current.Status == "ACTIVE" {
+			return true, nil
+		}
+		return false, nil
+	})
 	checkErr("waiting for server to boot", err)
 
-	*content += fmt.Sprintf("| %-20s | %-36s | %-15s |\n", "Name", "ID", "Password")
-	*content += fmt.Sprintf("|%s|%s|%s|\n", hyphens(20), hyphens(36), hyphens(15))
-	*content += fmt.Sprintf("| %-20s | %-36s | %-15s | \n", name, server.ID, server.AdminPass)
+	*content += fmt.Sprintf("Created a server!\n\n")
+	*content += fmt.Sprintf("| %-20s | %-36s | %-15s | %-8s |\n", "Name", "ID", "Password", "RAM (GB)")
+	*content += fmt.Sprintf("|%s|%s|%s|%s|\n", hyphens(20), hyphens(36), hyphens(15), hyphens(8))
+	*content += fmt.Sprintf("| %-20s | %-36s | %-15s | %-8d |\n", name, server.ID, server.AdminPass, 1)
 
-	return server.ID
-}
-
-func getPrefix(r *http.Request) string {
-	prefix := r.Header.Get("User-Prefix")
-	if prefix == "" {
-		prefix = randomStr("sandbox_", 10)
-	}
-	return prefix + "_"
+	return ip
 }
 
 func getName(r *http.Request) string {
@@ -62,12 +67,15 @@ func handleServerCreate(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	ensureMethod(r, "POST")
+
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081")
+	w.Header().Set("Access-Control-Expose-Headers", "Server-IP")
 
 	client := setupClients()["compute"]
 	content := ""
 
-	ip := createServer(client, &content, getName(r), getPrefix(r))
+	ip := createServer(client, &content, getName(r))
 	w.Header().Set("Server-IP", ip)
 
 	fmt.Fprintf(w, content)

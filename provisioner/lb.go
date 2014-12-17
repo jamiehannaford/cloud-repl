@@ -4,33 +4,32 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/rackspace/gophercloud/rackspace/lb/v1/lbs"
 	n "github.com/rackspace/gophercloud/rackspace/lb/v1/nodes"
 	"github.com/rackspace/gophercloud/rackspace/lb/v1/vips"
 )
 
-func getIPs(w http.ResponseWriter, r *http.Request) []string {
+func getNameAndIPs(w http.ResponseWriter, r *http.Request) (string, []string) {
 	decoder := json.NewDecoder(r.Body)
 
 	body := struct {
-		IPs []string `json:"server_ips"`
+		Name string   `json:"name"`
+		IPs  []string `json:"server_ips"`
 	}{}
 
 	err := decoder.Decode(&body)
 	checkErr("decoding create_lb request JSON", err)
 
+	if body.Name == "" {
+		body.Name = randomStr("", 10)
+	}
 	if len(body.IPs) == 0 {
 		panic("No server IPs provided")
 	}
 
-	return body.IPs
-}
-
-func ensureMethod(r *http.Request, expected string) {
-	if r.Method != expected {
-		panic(fmt.Sprintf("%s is not an expected method", r.Method))
-	}
+	return body.Name, body.IPs
 }
 
 func handleLBCreate(w http.ResponseWriter, r *http.Request) {
@@ -41,11 +40,11 @@ func handleLBCreate(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081")
-
 	ensureMethod(r, "POST")
 
-	ips := getIPs(w, r)
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081")
+
+	name, ips := getNameAndIPs(w, r)
 	nodes := []n.Node{}
 
 	for _, ip := range ips {
@@ -54,7 +53,7 @@ func handleLBCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := &lbs.CreateOpts{
-		Name:     randomStr("sandbox_", 10),
+		Name:     randomStr("sandbox_", 10) + name,
 		Nodes:    nodes,
 		Protocol: "HTTPS",
 		VIPs: []vips.VIP{
@@ -67,10 +66,12 @@ func handleLBCreate(w http.ResponseWriter, r *http.Request) {
 	lb, err := lbs.Create(client, opts).Extract()
 	checkErr("creating load balancer", err)
 
+	nameLen := strconv.Itoa(len(name))
+
 	content := fmt.Sprintf("Created a load balancer!\n\n")
-	content += fmt.Sprintf("| %-20s | %-10s | %-10s |\n", "Name", "ID", "IPv4")
-	content += fmt.Sprintf("|%s|%s|%s|\n", hyphens(20), hyphens(10), hyphens(10))
-	content += fmt.Sprintf("| %-20s | %-10d | %-10s |\n", lb.Name, lb.ID, lb.SourceAddrs.IPv4Public)
+	content += fmt.Sprintf("| %-"+nameLen+"s | %-10s | %-10s |\n", "Name", "ID", "IPv4")
+	content += fmt.Sprintf("|%s|%s|%s|\n", hyphens(len(name)), hyphens(10), hyphens(10))
+	content += fmt.Sprintf("| %-"+nameLen+"s | %-10d | %-10s |\n", name, lb.ID, lb.SourceAddrs.IPv4Public)
 
 	fmt.Fprintf(w, content)
 	w.Header().Set("Blah", "*")

@@ -3,8 +3,15 @@ package main
 import (
 	"crypto/rand"
 	"fmt"
+	"net/http"
 	"strings"
 )
+
+func ensureMethod(r *http.Request, expected string) {
+	if r.Method != expected {
+		panic(fmt.Sprintf("%s is not an expected method", r.Method))
+	}
+}
 
 func checkErr(msg string, err error) {
 	if err != nil {
