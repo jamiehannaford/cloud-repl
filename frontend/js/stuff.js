@@ -82,7 +82,10 @@ $( document ).ready(function() {
   });
 
   $(document).on("click", ".console-box", function() {
-    focusLastInput();
+    // If the user is selecting text, don't fire focus
+    if (!getSelection().toString()) {
+      focusLastInput();
+    }
   })
 });
 
@@ -107,7 +110,7 @@ function progressStep() {
           provision a VM! For the sake of this tour, we will select \
           a particular flavor and image for you. Your server will have 1GB of RAM \
           and use the Ubuntu 12.04 operating system - all you need to do is pick a \
-          name. To do this, run this command: <strong>server create {name}</strong> \
+          name.<br><br>To do this, run this command: <strong>server create {name}</strong> \
           , where {name} is the name you want to use.",
       4: "Now that we have our first server, let's create another one. Do the same \
           as before, but choose a different name: <strong>server create {name} \
@@ -115,7 +118,7 @@ function progressStep() {
           they're there. Run this command from your own shell: <strong>ssh root@\
           {ip_address}</strong> using the passwords provided.",
       5: "So we have two servers, great. Now we want to provision a Load Balancer \
-          to evenly distribute incoming traffic between them. To do this, all we \
+          to evenly distribute incoming traffic between them. <br><br>To do this, all we \
           need to do is select a name and run: <strong>lb create {name}</strong>.",
       6: "Awesome! You've finished. Visit the link returned below and you'll see \
           the front-end"
