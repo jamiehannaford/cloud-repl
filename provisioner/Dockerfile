@@ -1,5 +1,2 @@
 FROM golang:onbuild
-
-ENV RS_AUTH_URL=$RS_AUTH_URL
-
 EXPOSE 8080
