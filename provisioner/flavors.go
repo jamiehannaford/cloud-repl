@@ -2,21 +2,18 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 
+	"github.com/racker/perigee"
 	"github.com/rackspace/gophercloud/pagination"
 	"github.com/rackspace/gophercloud/rackspace/compute/v2/flavors"
 )
 
-func handleFlavors(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Fprintf(w, fmt.Sprintf("%s", r))
-		}
-	}()
+const flCachePath = "/tmp/sandbox_flavors"
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081")
-
+func listFlavors(w http.ResponseWriter, r *http.Request) error {
 	client := setupClients()["compute"]
 	content := ""
 
@@ -37,7 +34,43 @@ func handleFlavors(w http.ResponseWriter, r *http.Request) {
 
 		return true, nil
 	})
-	checkErr("listing flavors", err)
+	if err != nil {
+		return err
+	}
+
+	ioutil.WriteFile(flCachePath, []byte(content), 0644)
 
 	fmt.Fprintf(w, content)
+
+	return nil
+}
+
+func handleFlavors(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintf(w, fmt.Sprintf("%s", r))
+		}
+	}()
+
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081")
+
+	if fileExists(flCachePath) {
+		content, err := ioutil.ReadFile(flCachePath)
+		if string(content) != "" && err == nil {
+			fmt.Fprintf(w, string(content))
+			return
+		}
+	}
+
+	err := listFlavors(w, r)
+
+	// Catch 401 errors
+	if casted, ok := err.(*perigee.UnexpectedResponseCodeError); ok && casted.Actual == 401 {
+		if fileExists(cachePath) {
+			os.Remove(cachePath)
+			listFlavors(w, r)
+		}
+	} else {
+		checkErr("listing flavors", err)
+	}
 }

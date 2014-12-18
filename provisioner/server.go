@@ -36,9 +36,12 @@ func createServer(client *gophercloud.ServiceClient, content *string, name strin
 	checkErr("waiting for server to boot", err)
 
 	*content += fmt.Sprintf("Created a server!\n\n")
-	*content += fmt.Sprintf("| %-20s | %-36s | %-15s | %-8s |\n", "Name", "ID", "Password", "RAM (GB)")
-	*content += fmt.Sprintf("|%s|%s|%s|%s|\n", hyphens(20), hyphens(36), hyphens(15), hyphens(8))
-	*content += fmt.Sprintf("| %-20s | %-36s | %-15s | %-8d |\n", name, server.ID, server.AdminPass, 1)
+	*content += fmt.Sprintf("| %-20s | %-15s | %-13s | %-8s | \n", "Name",
+		"IPv4", "Password", "RAM (GB)")
+	*content += fmt.Sprintf("|%s|%s|%s|%s|\n", hyphens(20), hyphens(15),
+		hyphens(13), hyphens(8))
+	*content += fmt.Sprintf("| %-20s | %-15s | %-13s | %-8d | \n", name, ip,
+		server.AdminPass, 1)
 
 	return ip
 }

@@ -4,8 +4,14 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 )
+
+func fileExists(path string) bool {
+	_, err := os.Stat(cachePath)
+	return err == nil
+}
 
 func ensureMethod(r *http.Request, expected string) {
 	if r.Method != expected {

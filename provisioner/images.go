@@ -2,23 +2,20 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 
+	"github.com/racker/perigee"
 	"github.com/rackspace/gophercloud/pagination"
 	"github.com/rackspace/gophercloud/rackspace/compute/v2/images"
 )
 
-func handleImages(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Fprintf(w, fmt.Sprintf("%s", r))
-		}
-	}()
+const imCachePath = "/tmp/sandbox_images"
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081")
-
+func listImages(w http.ResponseWriter, r *http.Request) error {
 	client := setupClients()["compute"]
 	content := ""
 
@@ -47,7 +44,44 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 
 		return true, nil
 	})
-	checkErr("listing images", err)
+
+	if err != nil {
+		return err
+	}
+
+	ioutil.WriteFile(imCachePath, []byte(content), 0644)
 
 	fmt.Fprintf(w, content)
+
+	return nil
+}
+
+func handleImages(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintf(w, fmt.Sprintf("%s", r))
+		}
+	}()
+
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081")
+
+	if fileExists(imCachePath) {
+		content, err := ioutil.ReadFile(imCachePath)
+		if string(content) != "" && err == nil {
+			fmt.Fprintf(w, string(content))
+			return
+		}
+	}
+
+	err := listImages(w, r)
+
+	// Catch 401 errors
+	if casted, ok := err.(*perigee.UnexpectedResponseCodeError); ok && casted.Actual == 401 {
+		if fileExists(cachePath) {
+			os.Remove(cachePath)
+			listImages(w, r)
+		}
+	} else {
+		checkErr("listing images", err)
+	}
 }
