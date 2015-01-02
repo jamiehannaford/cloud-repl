@@ -1,3 +1,17 @@
+var Docker = require('dockerode');
+
+var docker = new Docker({
+  protocol: 'http',
+  host: '192.168.59.103',
+  port: process.env.DOCKER_PORT || 2376
+});
+
+docker.createContainer({Image: 'cloudrepl'}, function (err, container) {
+  container.start(function (err, data) {
+    console.log(err, data)
+  })
+})
+
 var commandBox = '<div class="command-box"> \
                     <span class="thing">$</span> \
                     <input class="user-input" autocomplete="false" /> \
