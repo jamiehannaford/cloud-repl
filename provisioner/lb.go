@@ -67,6 +67,9 @@ func handleLBCreate(w http.ResponseWriter, r *http.Request) {
 	checkErr("creating load balancer", err)
 
 	nameLen := strconv.Itoa(len(name))
+	if nameLen < 4 {
+		nameLen = 4
+	}
 
 	content := fmt.Sprintf("Created a load balancer!\n\n")
 	content += fmt.Sprintf("| %-"+nameLen+"s | %-10s | %-15s |\n", "Name", "ID", "IPv4")
@@ -74,5 +77,4 @@ func handleLBCreate(w http.ResponseWriter, r *http.Request) {
 	content += fmt.Sprintf("| %-"+nameLen+"s | %-10d | %-15s |\n", name, lb.ID, lb.SourceAddrs.IPv4Public)
 
 	fmt.Fprintf(w, content)
-	w.Header().Set("Blah", "*")
 }
