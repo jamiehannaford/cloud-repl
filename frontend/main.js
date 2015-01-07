@@ -1,16 +1,4 @@
-var Docker = require('dockerode');
-
-var docker = new Docker({
-  protocol: 'http',
-  host: '192.168.59.103',
-  port: process.env.DOCKER_PORT || 2376
-});
-
-docker.createContainer({Image: 'cloudrepl'}, function (err, container) {
-  container.start(function (err, data) {
-    console.log(err, data)
-  })
-})
+var provUrl = location.protocol + "//" + location.hostname + ':8080';
 
 var commandBox = '<div class="command-box"> \
                     <span class="thing">$</span> \
@@ -43,14 +31,14 @@ $( document ).ready(function() {
         $("#console .command-box:not(:last)").hide();
       } else if (cmd == "flavor list") {
           hideWarning();
-          $.get("http://localhost:8080/flavors", function (data) {
+          $.get(provUrl+"/flavors", function (data) {
             populateOutput(data);
             appendNewCommandBox();
             progressStep();
           });
       } else if (cmd == "image list") {
           hideWarning();
-          $.get("http://localhost:8080/images", function (data) {
+          $.get(provUrl+"/images", function (data) {
             populateOutput(data);
             appendNewCommandBox();
             progressStep();
@@ -67,7 +55,7 @@ $( document ).ready(function() {
         }
         var json = JSON.stringify({name: match[1]});
         hideWarning();
-        $.post("http://localhost:8080/create_server", json, function (data, txt, xhr) {
+        $.post(provUrl+"/create_server", json, function (data, txt, xhr) {
             populateOutput(data);
             appendNewCommandBox();
             serverIPs.push(xhr.getResponseHeader('Server-Ip'));
@@ -81,7 +69,7 @@ $( document ).ready(function() {
         }
         var json = JSON.stringify({name: match[1], server_ips: serverIPs})
         hideWarning();
-        $.post("http://localhost:8080/create_lb", json, function (data, txt, xhr) {
+        $.post(provUrl+"/create_lb", json, function (data, txt, xhr) {
             populateOutput(data);
             appendNewCommandBox();
             progressStep();

@@ -52,7 +52,7 @@ func handleFlavors(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081")
+	w.Header().Set("Access-Control-Allow-Origin", "http://104.130.226.169:80")
 
 	if fileExists(flCachePath) {
 		content, err := ioutil.ReadFile(flCachePath)

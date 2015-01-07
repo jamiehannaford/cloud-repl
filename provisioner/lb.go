@@ -42,7 +42,7 @@ func handleLBCreate(w http.ResponseWriter, r *http.Request) {
 
 	ensureMethod(r, "POST")
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081")
+	w.Header().Set("Access-Control-Allow-Origin", "http://104.130.226.169:80")
 
 	name, ips := getNameAndIPs(w, r)
 	nodes := []n.Node{}
