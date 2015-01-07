@@ -72,7 +72,7 @@ func handleServerCreate(w http.ResponseWriter, r *http.Request) {
 
 	ensureMethod(r, "POST")
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://104.130.226.169:80")
+	w.Header().Set("Access-Control-Allow-Origin", "http://104.130.226.169")
 	w.Header().Set("Access-Control-Expose-Headers", "Server-IP")
 
 	client := setupClients()["compute"]
