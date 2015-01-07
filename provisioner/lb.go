@@ -69,9 +69,9 @@ func handleLBCreate(w http.ResponseWriter, r *http.Request) {
 	nameLen := strconv.Itoa(len(name))
 
 	content := fmt.Sprintf("Created a load balancer!\n\n")
-	content += fmt.Sprintf("| %-"+nameLen+"s | %-10s | %-10s |\n", "Name", "ID", "IPv4")
-	content += fmt.Sprintf("|%s|%s|%s|\n", hyphens(len(name)), hyphens(10), hyphens(10))
-	content += fmt.Sprintf("| %-"+nameLen+"s | %-10d | %-10s |\n", name, lb.ID, lb.SourceAddrs.IPv4Public)
+	content += fmt.Sprintf("| %-"+nameLen+"s | %-10s | %-15s |\n", "Name", "ID", "IPv4")
+	content += fmt.Sprintf("|%s|%s|%s|\n", hyphens(len(name)), hyphens(10), hyphens(15))
+	content += fmt.Sprintf("| %-"+nameLen+"s | %-10d | %-15s |\n", name, lb.ID, lb.SourceAddrs.IPv4Public)
 
 	fmt.Fprintf(w, content)
 	w.Header().Set("Blah", "*")
