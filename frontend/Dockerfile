@@ -13,7 +13,7 @@ RUN mkdir -p /var/www/html
 ADD . /var/www/html
 
 # Port exposure
-EXPOSE 80 8080 
+EXPOSE 80 
 
 # Run it
 CMD nginx
