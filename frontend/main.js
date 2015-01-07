@@ -6,13 +6,11 @@ var commandBox = '<div class="command-box"> \
                     <div class="log-output"></div> \
                   </div>';
 
-var step = 1;
-
 $( document ).ready(function() {
 
   hideWarning();
   focusLastInput();
-  progressStep();
+  progressStep(1);
 
   var serverIPs = [];
 
@@ -34,14 +32,14 @@ $( document ).ready(function() {
           $.get(provUrl+"/flavors", function (data) {
             populateOutput(data);
             appendNewCommandBox();
-            progressStep();
+            progressStep(2);
           });
       } else if (cmd == "image list") {
           hideWarning();
           $.get(provUrl+"/images", function (data) {
             populateOutput(data);
             appendNewCommandBox();
-            progressStep();
+            progressStep(3);
           });
       } else if (serverCmdPatt.test(cmd)) {
         if (serverIPs.length >= 2) {
@@ -59,7 +57,7 @@ $( document ).ready(function() {
             populateOutput(data);
             appendNewCommandBox();
             serverIPs.push(xhr.getResponseHeader('Server-Ip'));
-            progressStep();
+            progressStep(4);
         });
       } else if (lbCreatePatt.test(cmd)) {
         var match = lbCreatePatt.exec(cmd);
@@ -72,7 +70,7 @@ $( document ).ready(function() {
         $.post(provUrl+"/create_lb", json, function (data, txt, xhr) {
             populateOutput(data);
             appendNewCommandBox();
-            progressStep();
+            progressStep(5);
         });
       } else {
           triggerWarning('"'+cmd+'" is not a supported command. Try again ;)');
@@ -91,7 +89,7 @@ $( document ).ready(function() {
   })
 });
 
-function progressStep() {
+function progressStep(step) {
   $(".steps li.current").removeClass("current").addClass("done");
 
   var messages = {
@@ -134,7 +132,6 @@ function progressStep() {
     if (messages[step] != undefined) {
       $("#info").html(messages[step]).show();
     }
-    step++;
   }
 }
 
