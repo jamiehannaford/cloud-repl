@@ -67,8 +67,8 @@ func handleLBCreate(w http.ResponseWriter, r *http.Request) {
 	checkErr("creating load balancer", err)
 
 	nameLen := strconv.Itoa(len(name))
-	if nameLen < 4 {
-		nameLen = 4
+	if len(name) < 4 {
+		nameLen = "4"
 	}
 
 	content := fmt.Sprintf("Created a load balancer!\n\n")
